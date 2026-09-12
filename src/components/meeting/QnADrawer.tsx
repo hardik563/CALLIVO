@@ -4,6 +4,7 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { getSocket } from '../../lib/socket';
+import { API_BASE_URL } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import {
   HelpCircle,
@@ -63,7 +64,7 @@ export const QnADrawer: React.FC<QnADrawerProps> = ({
   // Load questions
   const loadQuestions = useCallback(async () => {
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/questions`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/questions`, { credentials: 'include' });
       const data = await res.json();
       if (data.success && Array.isArray(data.questions)) {
         setQuestions(data.questions);
@@ -101,7 +102,7 @@ export const QnADrawer: React.FC<QnADrawerProps> = ({
       const guestName = sessionStorage.getItem('callivo_guest_name') || 'Participant';
       const authorName = user?.name || guestName;
 
-      const res = await fetch(`/api/meetings/${meetingId}/questions`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -131,7 +132,7 @@ export const QnADrawer: React.FC<QnADrawerProps> = ({
 
   const handleVote = async (questionId: string, voteType: 'up' | 'down') => {
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/questions/${questionId}/vote`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/questions/${questionId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -152,7 +153,7 @@ export const QnADrawer: React.FC<QnADrawerProps> = ({
     if (!answer) return;
 
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/questions/${questionId}/answer`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/questions/${questionId}/answer`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -172,7 +173,7 @@ export const QnADrawer: React.FC<QnADrawerProps> = ({
 
   const handleTogglePin = async (questionId: string, currentPin: boolean) => {
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/questions/${questionId}/pin`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/questions/${questionId}/pin`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

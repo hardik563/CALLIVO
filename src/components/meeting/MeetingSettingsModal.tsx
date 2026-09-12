@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { getSocket } from '../../lib/socket';
+import { API_BASE_URL } from '../../lib/api';
 import {
   Shield,
   Lock,
@@ -94,7 +95,7 @@ export const MeetingSettingsModal: React.FC<MeetingSettingsModalProps> = ({
         isLocked,
       };
 
-      const res = await fetch(`/api/meetings/${meetingId}/settings`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

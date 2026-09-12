@@ -4,6 +4,7 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { getSocket } from '../../lib/socket';
+import { API_BASE_URL } from '../../lib/api';
 import { useAuthStore } from '../../stores/authStore';
 import { MessageSquare, Send, Trash2 } from 'lucide-react';
 
@@ -42,7 +43,7 @@ export const CommentsDrawer: React.FC<CommentsDrawerProps> = ({
 
   const loadComments = useCallback(async () => {
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/comments`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/comments`, { credentials: 'include' });
       const data = await res.json();
       if (data.success && Array.isArray(data.comments)) {
         setComments(data.comments);
@@ -81,7 +82,7 @@ export const CommentsDrawer: React.FC<CommentsDrawerProps> = ({
       const guestName = sessionStorage.getItem('callivo_guest_name') || 'Guest';
       const authorName = user?.name || guestName;
 
-      const res = await fetch(`/api/meetings/${meetingId}/comments`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -110,7 +111,7 @@ export const CommentsDrawer: React.FC<CommentsDrawerProps> = ({
 
   const handleDeleteComment = async (commentId: string) => {
     try {
-      const res = await fetch(`/api/meetings/${meetingId}/comments/${commentId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/comments/${commentId}`, {
         method: 'DELETE',
         credentials: 'include',
       });

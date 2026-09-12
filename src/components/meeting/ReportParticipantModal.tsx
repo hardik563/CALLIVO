@@ -3,6 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { AlertTriangle, Send } from 'lucide-react';
+import { API_BASE_URL } from '../../lib/api';
 
 interface ReportParticipantModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const ReportParticipantModal: React.FC<ReportParticipantModalProps> = ({
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      const res = await fetch(`/api/meetings/${meetingId}/report`, {
+      const res = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

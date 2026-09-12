@@ -18,13 +18,17 @@ import { settingsRouter } from './settings/settings.controller';
 
 const app = express();
 
-// Allowed origins validator for Cloudflare tunnels, local development, and mobile devices
+// Allowed origins validator for Vercel deployments, Cloudflare tunnels, local development, and mobile devices
 export const isAllowedOrigin = (origin: string | undefined): boolean => {
   if (!origin) return true;
   if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  if (/^https?:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)) return true;
   if (/^https?:\/\/([a-zA-Z0-9-]+\.)*trycloudflare\.com(:\d+)?$/.test(origin)) return true;
   if (/^https?:\/\/([a-zA-Z0-9-]+\.)*cloudflareaccess\.com(:\d+)?$/.test(origin)) return true;
-  if (process.env.CLIENT_URL && origin.startsWith(process.env.CLIENT_URL)) return true;
+  if (process.env.CLIENT_URL) {
+    const allowed = process.env.CLIENT_URL.split(',').map((u: string) => u.trim().replace(/\/$/, ''));
+    if (allowed.some((u: string) => origin.startsWith(u) || u === '*')) return true;
+  }
   return true;
 };
 

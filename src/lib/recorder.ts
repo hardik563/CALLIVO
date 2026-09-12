@@ -1,4 +1,5 @@
 import { getSocket } from './socket';
+import { API_BASE_URL } from './api';
 
 export interface RecorderOptions {
   meetingId: string;
@@ -125,7 +126,7 @@ export class InMeetingRecorder {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Data = reader.result as string;
-        await fetch('/api/recordings/upload', {
+        await fetch(`${API_BASE_URL}/api/recordings/upload`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
