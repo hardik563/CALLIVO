@@ -65,6 +65,7 @@ export const useMeetingStore = create<MeetingState>((set) => ({
         title: meeting.title || 'CALLIVO Meeting',
         passcode: meeting.passcode || '',
         isHost: meeting.isHost !== undefined ? Boolean(meeting.isHost) : false,
+        hostId: meeting.hostId,
         startTime: Date.now(),
       },
     })),
@@ -98,6 +99,7 @@ export const useMeetingStore = create<MeetingState>((set) => ({
 
   resetMeeting: () =>
     set({
+      activeMeeting: null,
       isMuted: false,
       isCameraOff: false,
       isScreenSharing: false,

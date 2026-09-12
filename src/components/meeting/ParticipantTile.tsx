@@ -21,7 +21,6 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
   isLarge = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const { togglePinParticipant, toggleMuteParticipant } = useParticipantStore();
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
@@ -47,26 +46,36 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
     const targetSocketId = participant.socketId || participant.id;
     if (participant.isLocal) {
       if (videoRef.current && localStream) {
-        videoRef.current.srcObject = localStream;
+        const vTracks = localStream.getVideoTracks();
+        const activeVideoTrack = vTracks.find((t) => t.readyState === 'live' && t.enabled);
+        if (activeVideoTrack) {
+          const currentSrcObj = videoRef.current.srcObject as MediaStream | null;
+          const currentTrack = currentSrcObj?.getVideoTracks()[0];
+          if (!currentSrcObj || currentTrack?.id !== activeVideoTrack.id) {
+            videoRef.current.srcObject = new MediaStream([activeVideoTrack]);
+          }
+        } else if (videoRef.current.srcObject !== localStream) {
+          videoRef.current.srcObject = localStream;
+        }
         ensureMediaPlay(videoRef.current);
       }
     } else {
       const stream = webrtcManager.getRemoteStream(targetSocketId) || webrtcManager.getRemoteStream(participant.id);
       if (stream) {
-        if (videoRef.current) {
-          if (videoRef.current.srcObject !== stream) {
-            videoRef.current.srcObject = stream;
+        const vTracks = stream.getVideoTracks();
+        const activeVideoTrack = vTracks.find((t) => t.readyState === 'live' && t.enabled);
+        if (activeVideoTrack && videoRef.current) {
+          const currentSrcObj = videoRef.current.srcObject as MediaStream | null;
+          const currentTrack = currentSrcObj?.getVideoTracks()[0];
+          if (!currentSrcObj || currentTrack?.id !== activeVideoTrack.id) {
+            videoRef.current.srcObject = new MediaStream([activeVideoTrack]);
+            console.log(`[ParticipantTile] Attached video track ${activeVideoTrack.id} for ${participant.name}`);
           }
           ensureMediaPlay(videoRef.current);
+          setHasRemoteVideo(true);
+        } else if (!activeVideoTrack) {
+          setHasRemoteVideo(false);
         }
-        if (audioRef.current) {
-          if (audioRef.current.srcObject !== stream) {
-            audioRef.current.srcObject = stream;
-          }
-          ensureMediaPlay(audioRef.current);
-        }
-        const vTracks = stream.getVideoTracks();
-        setHasRemoteVideo(vTracks.length > 0 && vTracks.some((t) => t.enabled));
       }
     }
   }, [participant.isLocal, participant.id, participant.socketId, participant.isCameraOff, localStream]);
@@ -79,40 +88,40 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
     const checkStream = () => {
       const stream = webrtcManager.getRemoteStream(targetSocketId) || webrtcManager.getRemoteStream(participant.id);
       if (stream) {
-        if (videoRef.current) {
-          if (videoRef.current.srcObject !== stream) {
-            videoRef.current.srcObject = stream;
+        const vTracks = stream.getVideoTracks();
+        const activeVideoTrack = vTracks.find((t) => t.readyState === 'live' && t.enabled);
+        if (activeVideoTrack && videoRef.current) {
+          const currentSrcObj = videoRef.current.srcObject as MediaStream | null;
+          const currentTrack = currentSrcObj?.getVideoTracks()[0];
+          if (!currentSrcObj || currentTrack?.id !== activeVideoTrack.id) {
+            videoRef.current.srcObject = new MediaStream([activeVideoTrack]);
+            console.log(`[ParticipantTile] (CheckStream) Attached video track ${activeVideoTrack.id} for ${participant.name}`);
           }
           ensureMediaPlay(videoRef.current);
+          setHasRemoteVideo(true);
+        } else if (!activeVideoTrack) {
+          setHasRemoteVideo(false);
         }
-        if (audioRef.current) {
-          if (audioRef.current.srcObject !== stream) {
-            audioRef.current.srcObject = stream;
-          }
-          ensureMediaPlay(audioRef.current);
-        }
-        const vTracks = stream.getVideoTracks();
-        setHasRemoteVideo(vTracks.length > 0 && vTracks.some((t) => t.enabled));
       }
     };
 
     checkStream();
     const removeListener = webrtcManager.addStreamListener((socketId, stream) => {
       if (socketId === targetSocketId || socketId === participant.id) {
-        if (videoRef.current) {
-          if (videoRef.current.srcObject !== stream) {
-            videoRef.current.srcObject = stream;
+        const vTracks = stream.getVideoTracks();
+        const activeVideoTrack = vTracks.find((t) => t.readyState === 'live' && t.enabled);
+        if (activeVideoTrack && videoRef.current) {
+          const currentSrcObj = videoRef.current.srcObject as MediaStream | null;
+          const currentTrack = currentSrcObj?.getVideoTracks()[0];
+          if (!currentSrcObj || currentTrack?.id !== activeVideoTrack.id) {
+            videoRef.current.srcObject = new MediaStream([activeVideoTrack]);
+            console.log(`[ParticipantTile] (StreamListener) Attached video track ${activeVideoTrack.id} for ${participant.name}`);
           }
           ensureMediaPlay(videoRef.current);
+          setHasRemoteVideo(true);
+        } else if (!activeVideoTrack) {
+          setHasRemoteVideo(false);
         }
-        if (audioRef.current) {
-          if (audioRef.current.srcObject !== stream) {
-            audioRef.current.srcObject = stream;
-          }
-          ensureMediaPlay(audioRef.current);
-        }
-        const vTracks = stream.getVideoTracks();
-        setHasRemoteVideo(vTracks.length > 0 && vTracks.some((t) => t.enabled));
       }
     });
 
@@ -153,19 +162,6 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
         getBgStyle()
       )}
     >
-      {/* Remote Audio Track Playback Element (muted in-tile; WebRTCManager persistent player outputs real audio) */}
-      {!participant.isLocal && (
-        <audio
-          ref={audioRef}
-          autoPlay
-          playsInline
-          muted={true}
-          onLoadedMetadata={() => ensureMediaPlay(audioRef.current)}
-          onCanPlay={() => ensureMediaPlay(audioRef.current)}
-          className="absolute opacity-0 pointer-events-none w-0 h-0"
-        />
-      )}
-
       {/* Video Content & Camera Fallback */}
       {participant.isLocal ? (
         <div className="relative w-full h-full flex items-center justify-center bg-black">

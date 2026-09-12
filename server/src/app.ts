@@ -72,7 +72,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// WebRTC ICE servers configuration endpoint (Dynamic STUN + TURN from environment)
+// WebRTC ICE servers configuration endpoint (Dynamic STUN + TURN from environment with OpenRelay fallback)
 app.get('/api/webrtc/ice-servers', (req, res) => {
   const stunUrl = process.env.STUN_SERVER_URL || 'stun:stun.l.google.com:19302';
   const turnUrl = process.env.TURN_SERVER_URL;
@@ -98,6 +98,17 @@ app.get('/api/webrtc/ice-servers', (req, res) => {
     if (turnUsername) turnServer.username = turnUsername;
     if (turnPassword) turnServer.credential = turnPassword;
     iceServers.push(turnServer);
+  } else {
+    // High-availability public OpenRelay TURN fallback for NAT traversal across different networks
+    iceServers.push({
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    });
   }
 
   res.json({

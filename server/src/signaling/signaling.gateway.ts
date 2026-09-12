@@ -134,14 +134,10 @@ export function registerSignalingGateway(io: Server) {
 
         const room = getOrCreateRoom(meetingId, meeting.waitingRoom);
 
-        // 2. Determine authentic identity (Socket session takes priority, then DB lookup, then guest)
+        // 2. Determine authentic identity strictly by authenticated user session matching meeting.hostId
         const authUser = socket.data.user;
-        const resolvedUserId = authUser?.id || (payload.userId && payload.userId !== 'undefined' ? payload.userId : null);
-        const isHost = Boolean(
-          (authUser && meeting.hostId === authUser.id) ||
-          (resolvedUserId && meeting.hostId === resolvedUserId) ||
-          (!meeting.hostId && !room.hostSocketId && room.participants.size === 0)
-        );
+        const resolvedUserId = authUser ? authUser.id : (socket.data.guestId || null);
+        const isHost = Boolean(authUser && meeting.hostId === authUser.id);
 
         let participantName = authUser?.name || payload.name?.trim() || 'Guest Participant';
         let participantAvatar = authUser?.avatar || payload.avatar;

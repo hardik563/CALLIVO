@@ -9,6 +9,8 @@ import {
   getStoredUser,
   setStoredUser,
 } from '../lib/api';
+import { disconnectSocket } from '../lib/socket';
+import { useMeetingStore } from './meetingStore';
 
 interface AuthState {
   user: User | null;
@@ -102,6 +104,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (res.success && token && u) {
         setAuthToken(token);
+        disconnectSocket();
+        useMeetingStore.getState().resetMeeting();
         const normalizedUser: User = {
           id: u.id,
           name: u.name,
@@ -133,6 +137,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (res.success && token && u) {
         setAuthToken(token);
+        disconnectSocket();
+        useMeetingStore.getState().resetMeeting();
         const normalizedUser: User = {
           id: u.id,
           name: u.name,
@@ -172,6 +178,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (res.success && token && u) {
         setAuthToken(token);
+        disconnectSocket();
+        useMeetingStore.getState().resetMeeting();
         const normalizedUser: User = {
           id: u.id,
           name: u.name,
@@ -196,6 +204,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     removeAuthToken();
+    disconnectSocket();
+    useMeetingStore.getState().resetMeeting();
     try {
       authApi.logout();
     } catch {}

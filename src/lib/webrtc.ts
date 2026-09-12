@@ -15,6 +15,15 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
       'stun:stun.services.mozilla.com',
     ],
   },
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export class WebRTCManager {
@@ -34,6 +43,8 @@ export class WebRTCManager {
   private pendingAudioElements: Set<HTMLAudioElement> = new Set();
   private audioUnlocked: boolean = false;
   private unlockListenersAttached: boolean = false;
+  public isAudioAutoplayBlocked: boolean = false;
+  public onAudioAutoplayBlockedChange?: (blocked: boolean) => void;
 
   // Listeners
   public onRemoteStreamAdded?: (socketId: string, stream: MediaStream) => void;
@@ -72,8 +83,9 @@ export class WebRTCManager {
     if (pending && pending.length > 0) {
       this.pendingCandidates.delete(socketId);
       for (const candidate of pending) {
+        if (!candidate || !candidate.candidate) continue;
         try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+          await pc.addIceCandidate(candidate);
         } catch (e) {
           console.warn('[WebRTC-ICE] Error adding queued ICE candidate for', socketId, e);
         }
@@ -118,6 +130,10 @@ export class WebRTCManager {
         .then(() => {
           console.log(`[WebRTC-Audio] Pending audio element ${audioEl.id} unlocked and playing immediately`);
           this.pendingAudioElements.delete(audioEl);
+          if (this.pendingAudioElements.size === 0) {
+            this.isAudioAutoplayBlocked = false;
+            this.onAudioAutoplayBlockedChange?.(false);
+          }
         })
         .catch((err) => {
           console.warn(`[WebRTC-Audio] Audio element ${audioEl.id} still waiting for gesture:`, err);
@@ -139,10 +155,16 @@ export class WebRTCManager {
         .then(() => {
           console.log(`[WebRTC-Audio] Peer ${socketId} audio playing successfully`);
           this.pendingAudioElements.delete(audioEl);
+          if (this.pendingAudioElements.size === 0) {
+            this.isAudioAutoplayBlocked = false;
+            this.onAudioAutoplayBlockedChange?.(false);
+          }
         })
         .catch((err) => {
           console.warn(`[WebRTC-Audio] Peer ${socketId} audio playback waiting for user gesture:`, err);
           this.pendingAudioElements.add(audioEl);
+          this.isAudioAutoplayBlocked = true;
+          this.onAudioAutoplayBlockedChange?.(true);
           this.attachUnlockListeners();
         });
     }
@@ -208,10 +230,16 @@ export class WebRTCManager {
         .then(() => {
           console.log(`[WebRTC-Audio] Remote audio playback SUCCESS for peer ${socketId}`);
           this.pendingAudioElements.delete(audioEl!);
+          if (this.pendingAudioElements.size === 0) {
+            this.isAudioAutoplayBlocked = false;
+            this.onAudioAutoplayBlockedChange?.(false);
+          }
         })
         .catch((err) => {
           console.warn(`[WebRTC-Audio] Autoplay locked for peer ${socketId}, queueing for user interaction unlock:`, err);
           this.pendingAudioElements.add(audioEl!);
+          this.isAudioAutoplayBlocked = true;
+          this.onAudioAutoplayBlockedChange?.(true);
           this.attachUnlockListeners();
         });
     };
@@ -333,31 +361,24 @@ export class WebRTCManager {
   }
 
   /**
-   * Helper to ensure local audio/video tracks are attached to a peer connection's transceivers
+   * Helper to ensure local audio/video tracks are attached to a peer connection's senders
    */
-  private syncLocalTracksToPeer(pc: RTCPeerConnection, peerSocketId: string) {
+  private async syncLocalTracksToPeer(pc: RTCPeerConnection, peerSocketId: string) {
     if (!this.localStream) return;
     try {
-      const transceivers = pc.getTransceivers();
-      this.localStream.getTracks().forEach((track) => {
-        // Reuse existing transceiver for this track kind if available
-        const transceiver = transceivers.find((t) =>
-          t.sender.track?.id === track.id ||
-          t.receiver.track?.kind === track.kind ||
-          (t as any).kind === track.kind
-        );
-
-        if (transceiver && transceiver.sender) {
-          if (transceiver.sender.track !== track) {
-            transceiver.sender.replaceTrack(track).catch((e) =>
-              console.warn(`[WebRTC] replaceTrack error for ${peerSocketId}:`, e)
-            );
+      const senders = pc.getSenders();
+      for (const track of this.localStream.getTracks()) {
+        const sender = senders.find((s) => s.track?.kind === track.kind || (s as any).kind === track.kind);
+        if (sender) {
+          if (sender.track !== track) {
+            await sender.replaceTrack(track);
+            console.log(`[WebRTC] Replaced track ${track.kind} (${track.id}) for peer ${peerSocketId}`);
           }
         } else {
           pc.addTrack(track, this.localStream!);
           console.log(`[WebRTC] Added track ${track.kind} (${track.id}) to peer ${peerSocketId}`);
         }
-      });
+      }
     } catch (e) {
       console.warn(`[WebRTC] Error syncing tracks to peer ${peerSocketId}:`, e);
     }
@@ -464,8 +485,8 @@ export class WebRTCManager {
         await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
         await this.drainPendingCandidates(data.fromSocketId, pc);
 
-        // Ensure local tracks are attached before generating answer
-        this.syncLocalTracksToPeer(pc, data.fromSocketId);
+        // Attach local tracks after remote description so transceivers match
+        await this.syncLocalTracksToPeer(pc, data.fromSocketId);
 
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -497,10 +518,11 @@ export class WebRTCManager {
 
     // Handle incoming ICE candidate with queuing support
     socket.on('webrtc:ice-candidate', async (data: { fromSocketId: string; candidate: RTCIceCandidateInit }) => {
+      if (!data.candidate || !data.candidate.candidate) return;
       const pc = this.peerConnections.get(data.fromSocketId);
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         try {
-          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          await pc.addIceCandidate(data.candidate);
         } catch (err) {
           console.error('[WebRTC-ICE] Error adding ICE candidate from', data.fromSocketId, err);
         }
@@ -526,7 +548,16 @@ export class WebRTCManager {
     console.log(`[WebRTC-Signaling] Creating offer to peer ${targetSocketId}`);
     const pc = this.getOrCreatePeerConnection(targetSocketId);
     try {
-      this.syncLocalTracksToPeer(pc, targetSocketId);
+      await this.syncLocalTracksToPeer(pc, targetSocketId);
+
+      // Ensure transceivers exist so offer includes both m=audio and m=video sections
+      const transceivers = pc.getTransceivers();
+      if (!transceivers.some((t) => t.receiver.track?.kind === 'audio')) {
+        pc.addTransceiver('audio', { direction: 'sendrecv' });
+      }
+      if (!transceivers.some((t) => t.receiver.track?.kind === 'video')) {
+        pc.addTransceiver('video', { direction: 'sendrecv' });
+      }
 
       const offer = await pc.createOffer({
         offerToReceiveAudio: true,
@@ -559,20 +590,9 @@ export class WebRTCManager {
     });
     this.peerConnections.set(socketId, pc);
 
-    // Pre-allocate bidirectional audio and video transceivers to guarantee m=audio / m=video in initial SDP
-    try {
-      pc.addTransceiver('audio', { direction: 'sendrecv' });
-      pc.addTransceiver('video', { direction: 'sendrecv' });
-    } catch (e) {
-      console.warn('[WebRTC] addTransceiver note:', e);
-    }
-
-    // Attach local tracks
-    this.syncLocalTracksToPeer(pc, socketId);
-
     // ICE candidate generation
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
+      if (event.candidate && event.candidate.candidate) {
         const socket = getSocket();
         socket.emit('webrtc:ice-candidate', {
           toSocketId: socketId,
@@ -596,22 +616,22 @@ export class WebRTCManager {
         this.remoteStreams.set(socketId, remoteStream);
       }
 
-      if (event.streams && event.streams[0]) {
-        event.streams[0].getTracks().forEach((track) => {
-          if (!remoteStream!.getTracks().some((t) => t.id === track.id)) {
-            remoteStream!.addTrack(track);
-          }
-        });
+      // Add or update track in peer's remoteStream
+      const existingSameKind = remoteStream.getTracks().find((t) => t.kind === event.track.kind);
+      if (existingSameKind && existingSameKind.id !== event.track.id) {
+        remoteStream.removeTrack(existingSameKind);
       }
-
       if (!remoteStream.getTracks().some((t) => t.id === event.track.id)) {
         remoteStream.addTrack(event.track);
       }
 
+      // Provide fresh MediaStream reference so React component srcObject rebinds properly
+      const freshStream = new MediaStream(remoteStream.getTracks());
+
       const notify = () => {
-        this.onRemoteStreamAdded?.(socketId, remoteStream!);
+        this.onRemoteStreamAdded?.(socketId, freshStream);
         this.streamListeners.forEach((cb) => {
-          try { cb(socketId, remoteStream!); } catch (e) { console.error(e); }
+          try { cb(socketId, freshStream); } catch (e) { console.error(e); }
         });
       };
 
@@ -620,6 +640,15 @@ export class WebRTCManager {
       event.track.onunmute = () => {
         console.log(`[WebRTC-Track] Remote track ${event.track.kind} unmuted from peer ${socketId}`);
         notify();
+      };
+
+      event.track.onended = () => {
+        console.log(`[WebRTC-Track] Remote track ${event.track.kind} ended from peer ${socketId}`);
+        const currentStream = this.remoteStreams.get(socketId);
+        if (currentStream) {
+          currentStream.removeTrack(event.track);
+          notify();
+        }
       };
     };
 
@@ -691,7 +720,7 @@ export class WebRTCManager {
 
           // Update all active peer senders
           for (const [peerSocketId, pc] of this.peerConnections.entries()) {
-            this.syncLocalTracksToPeer(pc, peerSocketId);
+            await this.syncLocalTracksToPeer(pc, peerSocketId);
           }
           this.setupAudioAnalyser(this.localStream);
           this.onLocalStreamUpdated?.(this.localStream);
@@ -752,7 +781,7 @@ export class WebRTCManager {
             console.log(`[WebRTC-Video] Dynamically attached camera track ${newTrack.id} to local stream`);
 
             for (const [peerSocketId, pc] of this.peerConnections.entries()) {
-              this.syncLocalTracksToPeer(pc, peerSocketId);
+              await this.syncLocalTracksToPeer(pc, peerSocketId);
             }
             this.onLocalStreamUpdated?.(this.localStream);
           }

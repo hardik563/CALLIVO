@@ -66,20 +66,15 @@ export class MeetingsService {
 
     let hostId = userId;
     if (!hostId) {
-      const primaryUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
-      if (primaryUser) {
-        hostId = primaryUser.id;
-      } else {
-        const guestHost = await prisma.user.create({
-          data: {
-            email: `host-${Date.now()}@callivo.internal`,
-            name: 'CALLIVO Host',
-            passwordHash: 'none',
-            role: 'user',
-          },
-        });
-        hostId = guestHost.id;
-      }
+      const guestHost = await prisma.user.create({
+        data: {
+          email: `guest-host-${Date.now()}-${Math.random().toString(36).substring(2, 7)}@callivo.internal`,
+          name: 'Guest Host',
+          passwordHash: 'none',
+          role: 'user',
+        },
+      });
+      hostId = guestHost.id;
     }
 
     const host = await prisma.user.findUnique({ where: { id: hostId } });

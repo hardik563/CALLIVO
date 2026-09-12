@@ -36,6 +36,8 @@ import {
   UserCheck,
   AlertCircle,
   RefreshCw,
+  VolumeX,
+  Volume2,
 } from 'lucide-react';
 
 export const MeetingRoomPage: React.FC = () => {
@@ -95,7 +97,16 @@ export const MeetingRoomPage: React.FC = () => {
   >([]);
 
   const localParticipantIdRef = useRef<string>('local');
-  const isHost = Boolean(activeMeeting?.isHost || (user?.id && activeMeeting?.hostId === user.id));
+  const isHost = Boolean(user?.id && activeMeeting?.hostId === user.id);
+
+  // Audio autoplay blocked banner
+  const [isAudioAutoplayBlocked, setIsAudioAutoplayBlocked] = useState(webrtcManager.isAudioAutoplayBlocked);
+
+  useEffect(() => {
+    webrtcManager.onAudioAutoplayBlockedChange = (blocked) => {
+      setIsAudioAutoplayBlocked(blocked);
+    };
+  }, []);
 
   // Room connection lifecycle state
   const [roomStatus, setRoomStatus] = useState<'loading' | 'connecting' | 'connected' | 'error'>('loading');
@@ -116,7 +127,7 @@ export const MeetingRoomPage: React.FC = () => {
           id: res.meeting.id,
           title: res.meeting.title,
           passcode: res.meeting.passcode,
-          isHost: res.meeting.isHost,
+          isHost: Boolean(user?.id && res.meeting.hostId === user.id),
           hostId: res.meeting.hostId,
         });
         setMeetingConfig({
@@ -214,11 +225,16 @@ export const MeetingRoomPage: React.FC = () => {
     };
 
     // 1. Join Acknowledgement
-    socket.on('meeting:join:ack', (data: { meetingId: string; participant: any; roomState: any }) => {
+    socket.on('meeting:join:ack', (data: any) => {
       console.log('[CLIENT] meeting:join:ack received:', data);
       setIsWaiting(false);
       setRoomStatus('connected');
-      if (data.participant?.role === 'host') {
+      const isActuallyHost = data.role === 'host' || data.participant?.role === 'host';
+      updateParticipant('local', { isHost: isActuallyHost });
+      if (localParticipantIdRef.current) {
+        updateParticipant(localParticipantIdRef.current, { isHost: isActuallyHost });
+      }
+      if (isActuallyHost) {
         setActiveMeeting({
           ...activeMeeting,
           id: data.meetingId,
@@ -833,6 +849,25 @@ export const MeetingRoomPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Autoplay Audio Unlock Notification Banner */}
+      {isAudioAutoplayBlocked && (
+        <div className="bg-amber-500/95 text-slate-950 px-4 py-2 flex items-center justify-between text-xs font-semibold z-40 shadow-lg shrink-0">
+          <div className="flex items-center gap-2">
+            <VolumeX className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>Browser blocked incoming audio playback. Click to enable sound.</span>
+          </div>
+          <button
+            onClick={() => {
+              webrtcManager.unlockAudio();
+              setIsAudioAutoplayBlocked(false);
+            }}
+            className="px-3 py-1 bg-slate-950 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Enable Audio Now
+          </button>
+        </div>
+      )}
 
       {/* HOST ADMIT BANNER */}
       {waitingParticipants.length > 0 && isHost && (

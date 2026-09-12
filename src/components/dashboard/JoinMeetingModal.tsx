@@ -57,7 +57,8 @@ export const JoinMeetingModal: React.FC = () => {
         id: cleanId,
         title: res.meeting.title || `Meeting ${cleanId}`,
         passcode: passcode || undefined,
-        isHost: Boolean(res.meeting.isHost),
+        isHost: false,
+        hostId: res.meeting.hostId,
       });
 
       setTimeout(() => {
