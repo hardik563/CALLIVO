@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: 248 250 252;
+    --bg-surface: 255 255 255;
+    --bg-elevated: 241 245 249;
+    --bg-hover: 226 232 240;
+    --border-color: 226 232 240;
+    --text-primary: 15 23 42;
+    --text-secondary: 100 116 139;
+    --accent: 16 185 129;
+  }
+
+  .dark {
+    --bg-primary: 11 13 16;
+    --bg-surface: 16 19 24;
+    --bg-elevated: 21 25 31;
+    --bg-hover: 26 32 41;
+    --border-color: 36 42 51;
+    --text-primary: 248 250 252;
+    --text-secondary: 148 163 184;
+    --accent: 16 185 129;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: rgb(var(--bg-primary));
+    color: rgb(var(--text-primary));
+  }
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+/* Glassmorphic utilities */
+.glass-panel {
+  background: rgba(16, 19, 24, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light .glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(21, 25, 31, 0.9) 0%, rgba(16, 19, 24, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(var(--border-color));
+}
+
+.light .glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(241, 245, 249, 0.8) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Subtle glow effects */
+.glow-border {
+  position: relative;
+}
+
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.45), rgba(52, 211, 153, 0.15), transparent 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Canvas styling for 3D */
+canvas {
+  touch-action: none;
+}

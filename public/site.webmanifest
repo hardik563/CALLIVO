@@ -1,0 +1,26 @@
+{
+  "name": "CALLIVO — Meet. Connect. Collaborate.",
+  "short_name": "CALLIVO",
+  "description": "Enterprise-grade video conferencing, ultra-low latency collaboration, and signature 3D spatial conference rooms.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#0B0D12",
+  "background_color": "#0B0D12",
+  "display": "standalone",
+  "start_url": "/"
+}

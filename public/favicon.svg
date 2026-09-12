@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Brand Primary Gradient -->
+    <linearGradient id="callivoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="35%" stop-color="#2563EB" />
+      <stop offset="70%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <!-- Top Ambient Sheen -->
+    <linearGradient id="sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow for Camera Emblem -->
+    <filter id="cameraShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.28" />
+    </filter>
+  </defs>
+
+  <!-- Modern Rounded Squircle Base (fills canvas for crisp scaling) -->
+  <rect x="0" y="0" width="512" height="512" rx="124" fill="url(#callivoGrad)" />
+  
+  <!-- Subtle specular light overlay -->
+  <rect x="0" y="0" width="512" height="256" rx="124" fill="url(#sheen)" />
+  
+  <!-- Premium Glass Rim Border -->
+  <rect x="4" y="4" width="504" height="504" rx="120" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="8" />
+
+  <!-- The CALLIVO Video Camera & C Emblem -->
+  <g filter="url(#cameraShadow)">
+    <!-- Main Camera Housing (Solid Pure White for Ultra-High Tab Contrast) -->
+    <rect x="92" y="144" width="208" height="224" rx="50" fill="#FFFFFF" />
+
+    <!-- Stylized "C" Aperture Cutout exposing the vivid brand gradient -->
+    <path d="M 238,194 
+             A 62 62 0 1 0 238,318 
+             L 218,298 
+             A 34 34 0 1 1 218,214 Z" 
+          fill="url(#callivoGrad)" />
+
+    <!-- Central Collaboration & Video Sensor Focal Hub -->
+    <circle cx="196" cy="256" r="15" fill="url(#callivoGrad)" />
+
+    <!-- Camera Projection Lens Cone -->
+    <path d="M 330,204 
+             L 416,148 
+             C 426,141 440,148 440,162 
+             L 440,350 
+             C 440,364 426,371 416,364 
+             L 330,308 
+             C 322,303 316,293 316,282 
+             L 316,230 
+             C 316,219 322,209 330,204 Z" 
+          fill="#FFFFFF" />
+  </g>
+</svg>
