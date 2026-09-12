@@ -69,7 +69,7 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
         setHasRemoteVideo(vTracks.length > 0 && vTracks.some((t) => t.enabled));
       }
     }
-  }, [participant.isLocal, participant.id, participant.socketId, localStream]);
+  }, [participant.isLocal, participant.id, participant.socketId, participant.isCameraOff, localStream]);
 
   // Listen for newly arriving remote tracks
   useEffect(() => {
@@ -121,7 +121,7 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
       removeListener();
       clearInterval(interval);
     };
-  }, [participant.id, participant.socketId, participant.isLocal]);
+  }, [participant.id, participant.socketId, participant.isLocal, participant.isCameraOff]);
 
   const connectionColors = {
     excellent: 'text-emerald-400',
@@ -153,13 +153,13 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
         getBgStyle()
       )}
     >
-      {/* Remote Audio Track Playback Element (active in DOM without display:none to prevent engine throttling) */}
+      {/* Remote Audio Track Playback Element (muted in-tile; WebRTCManager persistent player outputs real audio) */}
       {!participant.isLocal && (
         <audio
           ref={audioRef}
           autoPlay
           playsInline
-          muted={false}
+          muted={true}
           onLoadedMetadata={() => ensureMediaPlay(audioRef.current)}
           onCanPlay={() => ensureMediaPlay(audioRef.current)}
           className="absolute opacity-0 pointer-events-none w-0 h-0"
@@ -168,31 +168,33 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
 
       {/* Video Content & Camera Fallback */}
       {participant.isLocal ? (
-        !participant.isCameraOff ? (
+        <div className="relative w-full h-full flex items-center justify-center bg-black">
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
             className={cn(
-              'w-full h-full object-cover transform -scale-x-100',
-              virtualBackground === 'blur' && 'filter blur-[1.5px]'
+              'w-full h-full object-cover transform -scale-x-100 transition-opacity duration-300',
+              virtualBackground === 'blur' && 'filter blur-[1.5px]',
+              participant.isCameraOff ? 'opacity-0 pointer-events-none absolute inset-0' : 'opacity-100'
             )}
           />
-        ) : (
-          <div className="flex flex-col items-center justify-center p-6 space-y-3">
-            <Avatar
-              name={participant.name}
-              src={participant.avatar}
-              size={isLarge ? '2xl' : 'xl'}
-              isSpeaking={participant.isSpeaking}
-            />
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-elevated/80 border border-slate-700/60 text-xs text-slate-400">
-              <VideoOff className="w-3.5 h-3.5" />
-              <span>Camera is off</span>
+          {participant.isCameraOff && (
+            <div className="flex flex-col items-center justify-center p-6 space-y-3 z-10">
+              <Avatar
+                name={participant.name}
+                src={participant.avatar}
+                size={isLarge ? '2xl' : 'xl'}
+                isSpeaking={participant.isSpeaking}
+              />
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-elevated/80 border border-slate-700/60 text-xs text-slate-400">
+                <VideoOff className="w-3.5 h-3.5" />
+                <span>Camera is off</span>
+              </div>
             </div>
-          </div>
-        )
+          )}
+        </div>
       ) : (
         // Remote Participant: Video element stays mounted at all times to decode frames continuously
         <div className="relative w-full h-full flex items-center justify-center bg-black">

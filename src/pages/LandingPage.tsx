@@ -119,7 +119,7 @@ export const LandingPage: React.FC = () => {
   };
 
   const copyMeetingInvite = () => {
-    navigator.clipboard?.writeText('https://callivo.app/room/clv-849-2180');
+    navigator.clipboard?.writeText(window.location.origin);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };

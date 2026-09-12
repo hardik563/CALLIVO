@@ -39,30 +39,25 @@ export const JoinMeetingModal: React.FC = () => {
 
     try {
       // Query backend to verify meeting existence and passcode
-      let meetingTitle = `Meeting ${cleanId}`;
-      let isHost = false;
+      const res = await meetingsApi.getById(cleanId);
+      if (!res.success || !res.meeting) {
+        setError('Meeting not found. Please check the meeting code and try again.');
+        setIsLoading(false);
+        return;
+      }
 
-      try {
-        const res = await meetingsApi.getById(cleanId);
-        if (res.success && res.meeting) {
-          meetingTitle = res.meeting.title || meetingTitle;
-          isHost = Boolean(res.meeting.isHost);
-          if (res.meeting.hasPasscode && passcode && res.meeting.passcode && passcode !== res.meeting.passcode) {
-            setError('Incorrect meeting passcode. Please verify and try again.');
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch {
-        // Allow joining dynamic ad-hoc room
+      if (res.meeting.hasPasscode && passcode && res.meeting.passcode && passcode !== res.meeting.passcode) {
+        setError('Incorrect meeting passcode. Please verify and try again.');
+        setIsLoading(false);
+        return;
       }
 
       setIsSuccess(true);
       setActiveMeeting({
         id: cleanId,
-        title: meetingTitle,
+        title: res.meeting.title || `Meeting ${cleanId}`,
         passcode: passcode || undefined,
-        isHost,
+        isHost: Boolean(res.meeting.isHost),
       });
 
       setTimeout(() => {
@@ -73,7 +68,7 @@ export const JoinMeetingModal: React.FC = () => {
         navigate(`/meetings/${cleanId}/lobby`);
       }, 400);
     } catch (err: any) {
-      setError(err.message || 'Unable to join meeting.');
+      setError(err.message || 'Meeting not found. Please check the meeting code and try again.');
     } finally {
       setIsLoading(false);
     }

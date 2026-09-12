@@ -19,26 +19,6 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   const [hasError, setHasError] = useState(!src);
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    // If it was an external image that failed, fallback to local avatar if available
-    const nameLower = (fallbackText || alt || '').toLowerCase();
-    const target = e.target as HTMLImageElement;
-    if (nameLower.includes('hardik') && !target.src.includes('/avatars/hardik.jpg')) {
-      target.src = '/avatars/hardik.jpg';
-      return;
-    }
-    if (nameLower.includes('elena') && !target.src.includes('/avatars/elena.jpg')) {
-      target.src = '/avatars/elena.jpg';
-      return;
-    }
-    if (nameLower.includes('marcus') && !target.src.includes('/avatars/marcus.jpg')) {
-      target.src = '/avatars/marcus.jpg';
-      return;
-    }
-    if (nameLower.includes('sarah') && !target.src.includes('/avatars/sarah.jpg')) {
-      target.src = '/avatars/sarah.jpg';
-      return;
-    }
-
     setHasError(true);
     if (onError) onError(e);
   };
@@ -64,26 +44,9 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     }
 
     if (fallbackVariant === 'avatar') {
-      const nameLower = (fallbackText || alt || '').toLowerCase();
-      let localSrc = '';
-      if (nameLower.includes('hardik')) localSrc = '/avatars/hardik.jpg';
-      else if (nameLower.includes('elena')) localSrc = '/avatars/elena.jpg';
-      else if (nameLower.includes('marcus')) localSrc = '/avatars/marcus.jpg';
-      else if (nameLower.includes('sarah')) localSrc = '/avatars/sarah.jpg';
-
-      if (localSrc) {
-        return (
-          <img
-            src={localSrc}
-            alt={alt}
-            className={className}
-            {...rest}
-          />
-        );
-      }
-
       const initials = (fallbackText || alt || 'User')
         .split(' ')
+        .filter(Boolean)
         .map((n) => n[0])
         .slice(0, 2)
         .join('')

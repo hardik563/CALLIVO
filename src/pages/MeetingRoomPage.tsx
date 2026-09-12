@@ -34,6 +34,8 @@ import {
   Clock,
   Check,
   UserCheck,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 export const MeetingRoomPage: React.FC = () => {
@@ -95,10 +97,19 @@ export const MeetingRoomPage: React.FC = () => {
   const localParticipantIdRef = useRef<string>('local');
   const isHost = Boolean(activeMeeting?.isHost || (user?.id && activeMeeting?.hostId === user.id));
 
+  // Room connection lifecycle state
+  const [roomStatus, setRoomStatus] = useState<'loading' | 'connecting' | 'connected' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // 1. Initialize meeting & fetch details from API
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setRoomStatus('error');
+      setErrorMessage('No meeting ID provided.');
+      return;
+    }
 
+    setRoomStatus('loading');
     meetingsApi.getById(id).then((res) => {
       if (res.success && res.meeting) {
         setActiveMeeting({
@@ -118,9 +129,15 @@ export const MeetingRoomPage: React.FC = () => {
           allowComments: res.meeting.allowComments,
           isLocked: res.meeting.isLocked,
         });
+        setRoomStatus('connecting');
+      } else {
+        setRoomStatus('error');
+        setErrorMessage('Meeting not found. Please verify the meeting ID.');
       }
     }).catch((err) => {
-      console.warn('Could not fetch meeting metadata, using active state:', err);
+      console.warn('Could not fetch meeting metadata:', err);
+      setRoomStatus('error');
+      setErrorMessage(err.message || 'Meeting not found or invalid link.');
     });
   }, [id, setActiveMeeting]);
 
@@ -200,6 +217,7 @@ export const MeetingRoomPage: React.FC = () => {
     socket.on('meeting:join:ack', (data: { meetingId: string; participant: any; roomState: any }) => {
       console.log('[CLIENT] meeting:join:ack received:', data);
       setIsWaiting(false);
+      setRoomStatus('connected');
       if (data.participant?.role === 'host') {
         setActiveMeeting({
           ...activeMeeting,
@@ -214,6 +232,7 @@ export const MeetingRoomPage: React.FC = () => {
     socket.on('meeting:state', (data: { meetingId: string; participants: any[] }) => {
       console.log('[CLIENT] meeting:state received:', data.participants?.length, 'participants');
       setIsWaiting(false);
+      setRoomStatus('connected');
 
       const mapped = (data.participants || []).map((p: any) => {
         const isSelf = p.socketId === socket.id || p.isSelf;
@@ -250,6 +269,7 @@ export const MeetingRoomPage: React.FC = () => {
     }) => {
       console.log('[CLIENT] room:joined received:', data);
       setIsWaiting(false);
+      setRoomStatus('connected');
       localParticipantIdRef.current = data.self.socketId;
 
       const selfParticipant = {
@@ -360,6 +380,9 @@ export const MeetingRoomPage: React.FC = () => {
     // Media toggle events
     socket.on('participant:audio-toggled', (payload: { socketId: string; isAudioMuted: boolean }) => {
       updateParticipant(payload.socketId, { isMuted: payload.isAudioMuted });
+      if (!payload.isAudioMuted) {
+        webrtcManager.ensurePeerAudioPlaying(payload.socketId);
+      }
     });
 
     socket.on('participant:video-toggled', (payload: { socketId: string; isVideoOff: boolean }) => {
@@ -456,6 +479,19 @@ export const MeetingRoomPage: React.FC = () => {
 
     socket.on('meeting:error', (payload: { message: string }) => {
       toastError('Meeting Error', payload.message);
+      setRoomStatus('error');
+      setErrorMessage(payload.message || 'Failed to join meeting.');
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.warn('[CLIENT] Socket disconnected:', reason);
+    });
+
+    socket.on('connect', () => {
+      console.log('[CLIENT] Socket reconnected');
+      if (roomStatus === 'error') {
+        setRoomStatus('connecting');
+      }
     });
 
     return () => {
@@ -587,7 +623,7 @@ export const MeetingRoomPage: React.FC = () => {
   };
 
   const handleCopyMeetingLink = async () => {
-    const meetingUrl = `${window.location.origin}/lobby/${id || 'clv-849-2180'}`;
+    const meetingUrl = `${window.location.origin}/meetings/${id}/lobby`;
     await copyToClipboard(meetingUrl);
     setCopiedLink(true);
     success('Meeting Link Copied', 'Share this link with anyone to join the call.');
@@ -595,11 +631,86 @@ export const MeetingRoomPage: React.FC = () => {
   };
 
   const handleCopyMeetingId = async () => {
-    await copyToClipboard(id || 'clv-849-2180');
-    success('Meeting ID Copied', id || 'clv-849-2180');
+    await copyToClipboard(id || '');
+    success('Meeting ID Copied', id || '');
   };
 
   const remoteParticipantsCount = participants.filter((p) => !p.isLocal).length;
+
+  if (roomStatus === 'loading') {
+    return (
+      <div className="fixed inset-0 bg-[#0B0D10] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden select-none font-sans z-50">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-md w-full bg-[#101318] border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mx-auto animate-pulse">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Joining meeting...</h2>
+            <p className="text-sm text-slate-400">Verifying credentials and preparing media session...</p>
+          </div>
+          <div className="p-3 bg-[#15191F] border border-slate-800 rounded-2xl text-xs text-slate-400 flex items-center justify-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Encrypted Room: {id}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomStatus === 'connecting') {
+    return (
+      <div className="fixed inset-0 bg-[#0B0D10] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden select-none font-sans z-50">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-md w-full bg-[#101318] border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center mx-auto animate-pulse">
+            <Wifi className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Connecting to Callivo...</h2>
+            <p className="text-sm text-slate-400">Establishing real-time WebRTC audio & video pipeline...</p>
+          </div>
+          <div className="p-3 bg-[#15191F] border border-slate-800 rounded-2xl text-xs text-slate-400 flex items-center justify-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Room ID: {id}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomStatus === 'error') {
+    return (
+      <div className="fixed inset-0 bg-[#0B0D10] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden select-none font-sans z-50">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-md w-full bg-[#101318] border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Unable to Open Meeting</h2>
+            <p className="text-sm text-slate-400">{errorMessage || 'Meeting room could not be loaded.'}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1 border-slate-700 hover:bg-slate-800 text-white"
+              onClick={() => navigate('/dashboard')}
+            >
+              Back to Dashboard
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1 bg-brand-600 hover:bg-brand-500 text-white"
+              onClick={() => window.location.reload()}
+            >
+              Retry Connection
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isWaiting) {
     return (
@@ -650,7 +761,7 @@ export const MeetingRoomPage: React.FC = () => {
               className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#15191F] hover:bg-[#242A33] text-[11px] font-mono text-emerald-400 transition-colors border border-[#242A33]"
               title="Click to copy Meeting ID"
             >
-              <span>{id || 'clv-849-2180'}</span>
+              <span>{id}</span>
               <Copy className="w-3 h-3 text-slate-400" />
             </button>
           </div>
@@ -887,9 +998,9 @@ export const MeetingRoomPage: React.FC = () => {
         isOpen={isMeetingInfoOpen}
         onClose={() => setIsMeetingInfoOpen(false)}
         meeting={{
-          id: id || 'clv-849-2180',
+          id: id || '',
           title: activeMeeting?.title || 'CALLIVO Video Session',
-          passcode: activeMeeting?.passcode || '948201',
+          passcode: activeMeeting?.passcode || '',
           hostName: user?.name || 'Host',
         }}
       />

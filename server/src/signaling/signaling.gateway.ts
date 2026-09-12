@@ -140,7 +140,7 @@ export function registerSignalingGateway(io: Server) {
         const isHost = Boolean(
           (authUser && meeting.hostId === authUser.id) ||
           (resolvedUserId && meeting.hostId === resolvedUserId) ||
-          (!room.hostSocketId && room.participants.size === 0)
+          (!meeting.hostId && !room.hostSocketId && room.participants.size === 0)
         );
 
         let participantName = authUser?.name || payload.name?.trim() || 'Guest Participant';

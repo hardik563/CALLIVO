@@ -44,6 +44,8 @@ export const MeetingLobbyPage: React.FC = () => {
   const [displayName, setDisplayName] = useState(user?.name || '');
   const [meetingDetails, setMeetingDetails] = useState<any>(null);
   const [isDeviceSettingsOpen, setIsDeviceSettingsOpen] = useState(false);
+  const [meetingNotFound, setMeetingNotFound] = useState(false);
+  const [meetingFetchError, setMeetingFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.name && !displayName) {
@@ -52,7 +54,10 @@ export const MeetingLobbyPage: React.FC = () => {
   }, [user?.name]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setMeetingNotFound(true);
+      return;
+    }
     meetingsApi.getById(id).then((res) => {
       if (res.success && res.meeting) {
         setMeetingDetails(res.meeting);
@@ -62,9 +67,14 @@ export const MeetingLobbyPage: React.FC = () => {
           passcode: res.meeting.passcode,
           isHost: Boolean(user?.id && res.meeting.hostId === user.id),
         });
+      } else {
+        setMeetingNotFound(true);
+        setMeetingFetchError('Meeting not found or invalid link.');
       }
     }).catch((err) => {
       console.warn('Lobby meeting fetch notice:', err.message);
+      setMeetingNotFound(true);
+      setMeetingFetchError(err.message || 'Meeting not found or invalid link.');
     });
   }, [id, user?.id, setActiveMeeting]);
 
@@ -117,6 +127,31 @@ export const MeetingLobbyPage: React.FC = () => {
       return 'bg-[url("https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80")] bg-cover bg-center';
     return '';
   };
+
+  if (meetingNotFound) {
+    return (
+      <div className="min-h-screen bg-background text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="max-w-md w-full bg-[#101318] border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Meeting Not Found</h2>
+            <p className="text-sm text-slate-400">
+              {meetingFetchError || 'The meeting code does not exist or has already concluded.'}
+            </p>
+          </div>
+          <Button
+            variant="primary"
+            className="w-full bg-brand-600 hover:bg-brand-500 text-white"
+            onClick={() => navigate('/dashboard')}
+          >
+            Return to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-slate-100 flex flex-col justify-between p-4 sm:p-8 relative overflow-hidden">

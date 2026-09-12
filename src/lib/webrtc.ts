@@ -127,6 +127,27 @@ export class WebRTCManager {
     this.audioUnlocked = true;
   }
 
+  /**
+   * Explicitly resume/play audio element for a specific peer when they unmute
+   */
+  public ensurePeerAudioPlaying(socketId: string) {
+    const audioEl = this.remoteAudioElements.get(socketId);
+    if (audioEl) {
+      audioEl.muted = false;
+      audioEl.volume = 1.0;
+      audioEl.play()
+        .then(() => {
+          console.log(`[WebRTC-Audio] Peer ${socketId} audio playing successfully`);
+          this.pendingAudioElements.delete(audioEl);
+        })
+        .catch((err) => {
+          console.warn(`[WebRTC-Audio] Peer ${socketId} audio playback waiting for user gesture:`, err);
+          this.pendingAudioElements.add(audioEl);
+          this.attachUnlockListeners();
+        });
+    }
+  }
+
   private attachUnlockListeners() {
     if (this.unlockListenersAttached || typeof window === 'undefined') return;
     this.unlockListenersAttached = true;
@@ -255,18 +276,25 @@ export class WebRTCManager {
           noiseSuppression: true,
           autoGainControl: true,
         },
-        video: video ? {
+        video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: 30 },
-        } : false,
+        },
       });
 
       // Apply initial audio enabled/mute state
       const audioTracks = this.localStream.getAudioTracks();
       audioTracks.forEach((track) => {
         track.enabled = audio;
-        console.log(`[WebRTC-Audio] Local audio track acquired: id=${track.id}, enabled=${track.enabled}, readyState=${track.readyState}, label="${track.label}"`);
+        console.log(`[WebRTC-Audio] Local audio track acquired: id=${track.id}, enabled=${track.enabled}, readyState=${track.readyState}`);
+      });
+
+      // Apply initial video enabled/cameraOff state
+      const videoTracks = this.localStream.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.enabled = video;
+        console.log(`[WebRTC-Video] Local video track acquired: id=${track.id}, enabled=${track.enabled}, readyState=${track.readyState}`);
       });
 
       this.setupAudioAnalyser(this.localStream);
@@ -281,7 +309,13 @@ export class WebRTCManager {
     } catch (err: any) {
       console.warn('[WebRTC-Media] Error acquiring camera & mic, falling back to audio-only:', err.message);
       try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
         this.localStream.getAudioTracks().forEach((track) => {
           track.enabled = audio;
         });
@@ -304,12 +338,20 @@ export class WebRTCManager {
   private syncLocalTracksToPeer(pc: RTCPeerConnection, peerSocketId: string) {
     if (!this.localStream) return;
     try {
-      const senders = pc.getSenders();
+      const transceivers = pc.getTransceivers();
       this.localStream.getTracks().forEach((track) => {
-        const sender = senders.find((s) => s.track?.id === track.id || (s.track?.kind === track.kind));
-        if (sender) {
-          if (sender.track !== track) {
-            sender.replaceTrack(track).catch((e) => console.warn(`[WebRTC] replaceTrack error for ${peerSocketId}:`, e));
+        // Reuse existing transceiver for this track kind if available
+        const transceiver = transceivers.find((t) =>
+          t.sender.track?.id === track.id ||
+          t.receiver.track?.kind === track.kind ||
+          (t as any).kind === track.kind
+        );
+
+        if (transceiver && transceiver.sender) {
+          if (transceiver.sender.track !== track) {
+            transceiver.sender.replaceTrack(track).catch((e) =>
+              console.warn(`[WebRTC] replaceTrack error for ${peerSocketId}:`, e)
+            );
           }
         } else {
           pc.addTrack(track, this.localStream!);
@@ -676,14 +718,57 @@ export class WebRTCManager {
   }
 
   /**
-   * Toggle local camera track
+   * Toggle local camera track with dynamic acquisition if no live track exists
    */
-  public setVideoEnabled(enabled: boolean) {
+  public async setVideoEnabled(enabled: boolean) {
+    console.log(`[WebRTC-Video] setVideoEnabled called: enabled=${enabled}`);
+
+    if (enabled) {
+      const hasLiveVideo = this.localStream && this.localStream.getVideoTracks().some((t) => t.readyState === 'live');
+      if (!hasLiveVideo) {
+        try {
+          console.log('[WebRTC-Video] No live video track exists on camera enable. Acquiring camera track dynamically...');
+          const camStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              frameRate: { ideal: 30 },
+            },
+          });
+          const newTrack = camStream.getVideoTracks()[0];
+          if (newTrack) {
+            newTrack.enabled = true;
+            if (!this.localStream) {
+              this.localStream = new MediaStream([newTrack]);
+            } else {
+              // Clean up any ended video tracks
+              this.localStream.getVideoTracks().forEach((t) => {
+                if (t.readyState === 'ended') {
+                  this.localStream!.removeTrack(t);
+                }
+              });
+              this.localStream.addTrack(newTrack);
+            }
+            console.log(`[WebRTC-Video] Dynamically attached camera track ${newTrack.id} to local stream`);
+
+            for (const [peerSocketId, pc] of this.peerConnections.entries()) {
+              this.syncLocalTracksToPeer(pc, peerSocketId);
+            }
+            this.onLocalStreamUpdated?.(this.localStream);
+          }
+        } catch (err) {
+          console.warn('[WebRTC-Video] Dynamic camera acquisition failed:', err);
+        }
+      }
+    }
+
     if (this.localStream) {
       this.localStream.getVideoTracks().forEach((track) => {
         track.enabled = enabled;
+        console.log(`[WebRTC-Video] Local video track ${track.id} enabled set to: ${enabled}`);
       });
     }
+
     if (this.meetingId) {
       const socket = getSocket();
       socket.emit('media:toggle-video', {

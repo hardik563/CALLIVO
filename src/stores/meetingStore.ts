@@ -61,10 +61,10 @@ export const useMeetingStore = create<MeetingState>((set) => ({
   setActiveMeeting: (meeting) =>
     set((state) => ({
       activeMeeting: {
-        id: meeting.id || 'clv-' + Math.floor(100 + Math.random() * 900) + '-' + Math.floor(1000 + Math.random() * 9000),
-        title: meeting.title || 'Instant CALLIVO Meeting',
-        passcode: meeting.passcode || String(Math.floor(100000 + Math.random() * 900000)),
-        isHost: meeting.isHost !== undefined ? meeting.isHost : true,
+        id: meeting.id || '',
+        title: meeting.title || 'CALLIVO Meeting',
+        passcode: meeting.passcode || '',
+        isHost: meeting.isHost !== undefined ? Boolean(meeting.isHost) : false,
         startTime: Date.now(),
       },
     })),
