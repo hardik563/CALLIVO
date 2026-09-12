@@ -17,8 +17,12 @@ if (!fs.existsSync(schemaPath)) {
 const schema = fs.readFileSync(schemaPath, 'utf8');
 const dbUrl = process.env.DATABASE_URL || '';
 
-// If DATABASE_URL starts with postgres/postgresql, configure PostgreSQL provider; otherwise SQLite
-const isPostgres = dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://');
+// If DATABASE_URL starts with postgres/postgresql, or in production without SQLite file: protocol, configure PostgreSQL
+const isPostgres =
+  dbUrl.startsWith('postgres://') ||
+  dbUrl.startsWith('postgresql://') ||
+  process.env.DB_PROVIDER === 'postgresql' ||
+  (process.env.NODE_ENV === 'production' && !dbUrl.startsWith('file:'));
 const targetProvider = isPostgres ? 'postgresql' : 'sqlite';
 
 const updated = schema.replace(
