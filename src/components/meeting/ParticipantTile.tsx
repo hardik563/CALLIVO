@@ -200,7 +200,7 @@ export const ParticipantTile: React.FC<ParticipantTileProps> = ({
             ref={videoRef}
             autoPlay
             playsInline
-            muted={false}
+            muted={true}
             onLoadedMetadata={() => {
               setHasRemoteVideo(true);
               ensureMediaPlay(videoRef.current);

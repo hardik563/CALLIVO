@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { VirtualBackground } from '../types';
 import { meetingsApi } from '../lib/api';
+import { webrtcManager } from '../lib/webrtc';
 
 export const MeetingLobbyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +93,9 @@ export const MeetingLobbyPage: React.FC = () => {
   }, [stream]);
 
   const handleJoinNow = () => {
+    // Proactively unlock browser audio engine on direct user click gesture
+    webrtcManager.unlockAudio();
+
     const finalName = displayName.trim() || user?.name || 'Guest Participant';
     sessionStorage.setItem('callivo_guest_name', finalName);
 

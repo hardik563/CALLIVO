@@ -130,6 +130,13 @@ export const MeetingRoomPage: React.FC = () => {
 
     clearMeetingMessages();
 
+    // Trigger immediate audio unlock for browser autoplay policies
+    webrtcManager.unlockAudio();
+    const unlockOnGesture = () => webrtcManager.unlockAudio();
+    window.addEventListener('click', unlockOnGesture, { passive: true });
+    window.addEventListener('touchstart', unlockOnGesture, { passive: true });
+    window.addEventListener('keydown', unlockOnGesture, { passive: true });
+
     const guestName = sessionStorage.getItem('callivo_guest_name') || 'Guest Participant';
     const effectiveName = user?.name || guestName;
     const effectiveAvatar = user?.avatar || undefined;
@@ -482,6 +489,9 @@ export const MeetingRoomPage: React.FC = () => {
       socket.off('host:removed');
       socket.off('meeting:ended');
       socket.off('meeting:error');
+      window.removeEventListener('click', unlockOnGesture);
+      window.removeEventListener('touchstart', unlockOnGesture);
+      window.removeEventListener('keydown', unlockOnGesture);
     };
   }, [id]);
 
