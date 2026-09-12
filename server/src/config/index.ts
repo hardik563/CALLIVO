@@ -9,7 +9,7 @@ export const config = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5000',
   serverUrl: process.env.SERVER_URL || 'http://localhost:5000',
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
-  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  redisUrl: process.env.REDIS_URL || '',
   jwt: {
     secret: process.env.JWT_SECRET || 'callivo_default_jwt_secret_dev_key',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'callivo_default_refresh_secret_dev_key',
