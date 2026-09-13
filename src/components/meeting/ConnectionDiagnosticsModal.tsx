@@ -12,6 +12,7 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
+  Volume2,
 } from 'lucide-react';
 
 interface ConnectionDiagnosticsModalProps {
@@ -170,6 +171,32 @@ export const ConnectionDiagnosticsModal: React.FC<ConnectionDiagnosticsModalProp
         {/* Codec & ICE Details */}
         {stats && (
           <div className="p-3 rounded-xl bg-surface border border-slate-700/80 space-y-2 text-xs">
+            <div className="flex items-center justify-between text-slate-300">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Mic className="w-3.5 h-3.5 text-brand-400" /> Audio Pipeline:
+              </span>
+              <span className="font-mono text-[11px] text-emerald-400">
+                TX: {stats.audioBytesSent ?? 0}B ({stats.audioPacketsSent ?? 0} pkts) | RX: {stats.audioBytesReceived ?? 0}B ({stats.audioPacketsReceived ?? 0} pkts)
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-300">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Volume2 className="w-3.5 h-3.5 text-sky-400" /> Audio Playback:
+              </span>
+              <div className="flex items-center gap-2">
+                <span className={`font-mono text-[11px] font-semibold ${stats.isAudioAutoplayBlocked ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {stats.isAudioAutoplayBlocked ? 'Autoplay Blocked' : 'Active & Unlocked'}
+                </span>
+                {stats.isAudioAutoplayBlocked && (
+                  <button
+                    onClick={() => webrtcManager.unlockAudio()}
+                    className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded text-[10px] cursor-pointer"
+                  >
+                    Unlock
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="flex items-center justify-between text-slate-300">
               <span className="flex items-center gap-1.5 text-slate-400">
                 <Mic className="w-3.5 h-3.5 text-brand-400" /> Audio Codec:

@@ -64,26 +64,10 @@ export function useMediaStream({
       const canvasStream = canvas.captureStream(30);
       const videoTrack = canvasStream.getVideoTracks()[0];
 
-      // Audio track fallback with silent/synthetic audio oscillator
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const dest = audioCtx.createMediaStreamDestination();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0.001; // nearly inaudible
-      osc.connect(gain);
-      gain.connect(dest);
-      osc.start();
-
-      const combinedStream = new MediaStream([videoTrack, dest.stream.getAudioTracks()[0]]);
+      const combinedStream = new MediaStream([videoTrack]);
 
       videoTrack.onended = () => {
         clearInterval(interval);
-        try {
-          osc.stop();
-          audioCtx.close();
-        } catch (e) {
-          // ignore
-        }
       };
 
       return combinedStream;

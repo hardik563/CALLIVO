@@ -18,26 +18,11 @@ export function useAudioMeter(stream: MediaStream | null, isMuted: boolean = fal
     }
 
     const audioTracks = stream.getAudioTracks();
-    if (audioTracks.length === 0) {
-      // Simulate gentle conversational audio level for realistic UI demonstration
-      const interval = setInterval(() => {
-        if (!isMuted) {
-          const simVol = Math.floor(20 + Math.random() * 50);
-          setVolume(simVol);
-          setIsSpeaking(simVol > 35);
-          setFrequencies([
-            Math.floor(10 + Math.random() * 40),
-            Math.floor(25 + Math.random() * 55),
-            Math.floor(40 + Math.random() * 50),
-            Math.floor(55 + Math.random() * 45),
-            Math.floor(35 + Math.random() * 50),
-            Math.floor(20 + Math.random() * 40),
-            Math.floor(10 + Math.random() * 30),
-          ]);
-        }
-      }, 120);
-
-      return () => clearInterval(interval);
+    if (audioTracks.length === 0 || !audioTracks.some((t) => t.readyState === 'live' && t.enabled)) {
+      setVolume(0);
+      setIsSpeaking(false);
+      setFrequencies([0, 0, 0, 0, 0, 0, 0]);
+      return;
     }
 
     try {
