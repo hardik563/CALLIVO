@@ -13,13 +13,17 @@
 
 [Explore Live Demo](https://callivo.vercel.app) • [View Architecture Docs](docs/02_ARCHITECTURE.md) • [Interview Guide](docs/18_INTERVIEW_QUESTIONS.md) • [Viva Q&A](docs/19_VIVA_QA.md)
 
+<br/>
+
+<img width="1917" height="993" alt="CALLIVO Hero Interface" src="https://github.com/user-attachments/assets/6fab6aeb-6ecc-47a8-a6a5-7acfa9a1a410" />
+
 </div>
 
 ---
 
-## 📖 Comprehensive Documentation Suite (`docs/`)
+## 📖 Comprehensive Technical Documentation (`docs/`)
 
-The repository includes complete, study-grade technical documentation designed for deep architectural reviews, technical interviews, and academic viva examinations:
+The repository includes complete, study-grade technical documentation designed for deep architectural reviews, engineering interviews, and academic viva examinations:
 
 | Document | Topic | Description |
 | :--- | :--- | :--- |
@@ -47,6 +51,12 @@ The repository includes complete, study-grade technical documentation designed f
 
 ---
 
+<div align="center">
+<img width="1892" height="975" alt="CALLIVO Meeting Room View" src="https://github.com/user-attachments/assets/ae7a1278-3cdb-495d-9af5-9b2ddb0cde8a" />
+</div>
+
+---
+
 ## 🚀 Key Platform Features
 
 - **Direct P2P WebRTC Conferencing:** Ultra-low latency, hardware-accelerated audio/video streams with DTLS/SRTP encryption.
@@ -59,6 +69,12 @@ The repository includes complete, study-grade technical documentation designed f
 - **Real-Time Network Diagnostics:** Live telemetry modal displaying Round Trip Time (RTT), packet loss percentage, audio jitter (ms), negotiation direction (`sendrecv`), and active ICE candidate IP/protocol pairs.
 - **3D Spatial Meeting Interface:** Interactive Three.js / React Three Fiber virtual conference room and animated 3D landing hero.
 - **Complete Productivity Suite:** Personal dashboard, meeting scheduler, integrated monthly calendar, user address book, direct messaging, and helpdesk support ticketing.
+
+---
+
+<div align="center">
+<img width="1896" height="976" alt="CALLIVO Collaboration Features" src="https://github.com/user-attachments/assets/cd78679d-180b-44d3-9b22-049c29ee6d45" />
+</div>
 
 ---
 
@@ -99,6 +115,12 @@ graph LR
     Server <== SQL Queries ==> Storage
     Client <== Direct Encrypted SRTP ==> Media
 ```
+
+---
+
+<div align="center">
+<img width="1912" height="960" alt="CALLIVO Dashboard Overview" src="https://github.com/user-attachments/assets/05e829cf-f9cf-4ccc-8aae-706bcc7e4f84" />
+</div>
 
 ---
 
@@ -159,6 +181,12 @@ Open your browser and navigate to `http://localhost:5173`.
 
 ---
 
+<div align="center">
+<img width="1915" height="982" alt="CALLIVO Calendar & Productivity" src="https://github.com/user-attachments/assets/9757e0cc-020c-4c00-8b3f-b1057a51a950" />
+</div>
+
+---
+
 ## 📦 Production Deployment Architecture
 
 CALLIVO is architectured for multi-cloud deployment:
@@ -194,15 +222,6 @@ Direct WebRTC Mesh Audio/Video ◄─────────┘
 - **CORS & Header Hardening:** Strict dynamic origin validation combined with Helmet security headers.
 - **SQL Injection Defense:** All queries parameterized through Prisma ORM; zero raw string SQL interpolation.
 - **Input Sanitization:** Every API endpoint payload is strictly validated using Zod schemas.
-
----
-
-## 🔮 Future Improvements (Enterprise Roadmap)
-
-- **Selective Forwarding Unit (SFU):** Integrating `mediasoup` or LiveKit to scale beyond mesh limits to 50+ concurrent participants per room.
-- **Server-Side Composite Recording:** Headless browser workers to record and composite meeting grids into full-fidelity MP4 files.
-- **End-to-End Encrypted Chat:** Implementing client-side Signal Protocol keys for in-call text and file distribution.
-- **Two-Factor Authentication (2FA):** Authenticator app TOTP verification for enhanced account security.
 
 ---
 
