@@ -6,11 +6,34 @@ Callivo is a modern, high-performance, real-time video conferencing platform eng
 
 ---
 
+
+
+
+
+# CALLIVO
+
+Meet. Connect. Collaborate.
+
+🌐 **Live Website:** https://callivo.vercel.app
+
+
+<img width="1917" height="993" alt="image" src="https://github.com/user-attachments/assets/6fab6aeb-6ecc-47a8-a6a5-7acfa9a1a410" />
+
+
+
+
+
+
 ## 1. Project Overview
 
 Callivo provides an end-to-end, zero-install, browser-native video conferencing experience. Users can host instant meetings, schedule upcoming conferences, invite team members, exchange real-time in-meeting chat, share screens, record sessions locally with browser-side media composition, and customize audio/video settings with real-time audio visualizers.
 
 ---
+
+
+<img width="1892" height="975" alt="image" src="https://github.com/user-attachments/assets/ae7a1278-3cdb-495d-9af5-9b2ddb0cde8a" />
+
+
 
 ## 2. Key Features
 
@@ -30,6 +53,13 @@ Callivo provides an end-to-end, zero-install, browser-native video conferencing 
 - **User Settings & Diagnostics**: Customizable audio processing (echo cancellation, noise suppression, auto-gain), video resolution/framerate selection, theme toggling (dark/light), and live network/ICE connection diagnostics.
 
 ---
+
+
+
+<img width="1896" height="976" alt="image" src="https://github.com/user-attachments/assets/cd78679d-180b-44d3-9b22-049c29ee6d45" />
+
+
+
 
 ## 3. Tech Stack
 
@@ -92,6 +122,11 @@ Callivo provides an end-to-end, zero-install, browser-native video conferencing 
 2. **Decoupled Deployment Model (Supported)**: The frontend can optionally be hosted separately (e.g., on Vercel or Netlify) by configuring `VITE_API_URL` and `VITE_SERVER_URL` to point to the backend domain.
 
 ---
+
+
+<img width="1912" height="960" alt="image" src="https://github.com/user-attachments/assets/05e829cf-f9cf-4ccc-8aae-706bcc7e4f84" />
+
+
 
 ## 5. Project Structure
 
@@ -156,6 +191,11 @@ CALLIVO/
 ```
 
 ---
+
+
+<img width="1915" height="982" alt="image" src="https://github.com/user-attachments/assets/9757e0cc-020c-4c00-8b3f-b1057a51a950" />
+
+
 
 ## 6. Prerequisites
 
