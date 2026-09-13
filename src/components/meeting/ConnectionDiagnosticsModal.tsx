@@ -173,10 +173,18 @@ export const ConnectionDiagnosticsModal: React.FC<ConnectionDiagnosticsModalProp
           <div className="p-3 rounded-xl bg-surface border border-slate-700/80 space-y-2 text-xs">
             <div className="flex items-center justify-between text-slate-300">
               <span className="flex items-center gap-1.5 text-slate-400">
-                <Mic className="w-3.5 h-3.5 text-brand-400" /> Audio Pipeline:
+                <Mic className="w-3.5 h-3.5 text-brand-400" /> Audio Packets:
               </span>
               <span className="font-mono text-[11px] text-emerald-400">
-                TX: {stats.audioBytesSent ?? 0}B ({stats.audioPacketsSent ?? 0} pkts) | RX: {stats.audioBytesReceived ?? 0}B ({stats.audioPacketsReceived ?? 0} pkts)
+                TX: {stats.audioPacketsSent} pkts ({stats.audioBytesSent}B) | RX: {stats.audioPacketsReceived} pkts ({stats.audioBytesReceived}B)
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-slate-300">
+              <span className="flex items-center gap-1.5 text-slate-400">
+                <Activity className="w-3.5 h-3.5 text-purple-400" /> Audio Negotiation:
+              </span>
+              <span className="font-mono text-[11px] text-sky-400">
+                SDP: {stats.audioCurrentDirection || 'unknown'} (cfg: {stats.audioDirection}) | Loss: {stats.audioPacketsLost} | Jitter: {stats.audioJitterMs}ms
               </span>
             </div>
             <div className="flex items-center justify-between text-slate-300">
@@ -184,8 +192,11 @@ export const ConnectionDiagnosticsModal: React.FC<ConnectionDiagnosticsModalProp
                 <Volume2 className="w-3.5 h-3.5 text-sky-400" /> Audio Playback:
               </span>
               <div className="flex items-center gap-2">
-                <span className={`font-mono text-[11px] font-semibold ${stats.isAudioAutoplayBlocked ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {stats.isAudioAutoplayBlocked ? 'Autoplay Blocked' : 'Active & Unlocked'}
+                <span className={`font-mono text-[11px] font-semibold ${stats.isAudioElementPlaying ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {stats.isAudioElementPlaying ? 'Playing' : 'Paused/Buffering'}
+                </span>
+                <span className={`font-mono text-[11px] ${stats.isAudioAutoplayBlocked ? 'text-rose-400' : 'text-slate-400'}`}>
+                  ({stats.isAudioAutoplayBlocked ? 'Blocked' : 'Unlocked'})
                 </span>
                 {stats.isAudioAutoplayBlocked && (
                   <button
